@@ -5,16 +5,39 @@ Affiche le flux caméra de la Jetson (via web_video_server) sur le PC.
 Principe : tunnel SSH PC -> Raspberry -> Jetson:8080, puis lecture du flux MJPEG.
 
 Prérequis côté voiture (dans le conteneur ros-humble de la Jetson) :
-  - connection ssh : ssh -J pi@10.105.1.168 jetson@192.168.1.10
-  - les nœuds caméra lancés  : ros2 launch geicar_start_jetson geicar.jetson.launch.py
-  - le serveur vidéo lancé   : ros2 run web_video_server web_video_server
+activation caméra :
+  ssh -J pi@10.105.1.168 jetson@192.168.1.10
+  sudo docker start -ai ros-humble
+  ros2 launch geicar_start_jetson geicar.jetson.launch.py
+
+serveur vidéo (autre terminal) :
+  ssh -J pi@10.105.1.168 jetson@192.168.1.10
+  sudo docker exec -it ros-humble bash
+  source /opt/ros/humble/setup.bash
+  ros2 run web_video_server web_video_server
+
+
+lancement caméra avec param
+  ros2 run usb_cam usb_cam_node_exe --ros-args -p video_device:=/dev/video0 -p image_width:=1280 -p image_height:=960 -p framerate:=30.0 -p pixel_format:=yuyv
 
 Usage :
-  python3 camera_viewer.py --pi 10.105.1.XX
-  python3 camera_viewer.py --pi 10.105.1.XX --browser      # ouvre le navigateur à la place
+  python3 camera_viewer.py --pi 10.105.1.168
+  python3 camera_viewer.py --pi 10.105.1.168 --width 320 --height 240 --fps 5
+  python3 camera_viewer.py --pi 10.105.1.168 --browser
+  python3 camera_viewer.py --pi 10.105.1.168 --record run1.mp4
+  python3 camera_viewer.py --pi 10.105.1.168 --frames-dir dataset/run1 --every 3
+
+Notes :
+  --width/--height : redimensionnement fait par web_video_server (réduit la
+                     bande passante). Ce n'est PAS un changement de la caméra :
+                     la résolution native se règle dans le launch (usb_cam).
+  --fps            : limite la cadence d'affichage/enregistrement sur le PC
+                     (ne peut pas dépasser la cadence réelle de la caméra).
 Dépendances (optionnel) : pip install opencv-python
 """
+
 import argparse
+import os
 import socket
 import subprocess
 import sys
@@ -35,15 +58,31 @@ def main():
     p.add_argument("--jetson", default="192.168.1.10", help="IP de la Jetson (réseau interne)")
     p.add_argument("--port", type=int, default=8080, help="port web_video_server et port local")
     p.add_argument("--topic", default="/image_raw")
-    p.add_argument("--quality", type=int, default=50, help="qualité JPEG (1-100)")
+    p.add_argument("--quality", type=int, default=None,
+                   help="qualité JPEG (1-100). Défaut : 50 pour l'affichage, 95 si enregistrement")
+    p.add_argument("--width", type=int, default=None, help="largeur du flux (redimensionné par le serveur)")
+    p.add_argument("--height", type=int, default=None, help="hauteur du flux (redimensionné par le serveur)")
+    p.add_argument("--fps", type=float, default=0, help="cadence max d'affichage/enregistrement (0 = pas de limite)")
     p.add_argument("--browser", action="store_true", help="ouvrir dans le navigateur au lieu d'OpenCV")
+    p.add_argument("--record", metavar="FICHIER.mp4", help="enregistrer la vidéo dans ce fichier")
+    p.add_argument("--frames-dir", metavar="DOSSIER", help="sauvegarder des images JPEG dans ce dossier")
+    p.add_argument("--every", type=int, default=1, help="avec --frames-dir : une image sur N (défaut 1)")
     args = p.parse_args()
+
+    if (args.width is None) != (args.height is None):
+        sys.exit("Indiquez --width et --height ensemble.")
 
     if port_open(args.port):
         sys.exit(f"Le port local {args.port} est déjà utilisé. Fermez l'ancien tunnel ou changez --port.")
 
+    recording = bool(args.record or args.frames_dir)
+    if args.quality is None:
+        args.quality = 95 if recording else 50
+
     url = (f"http://localhost:{args.port}/stream?topic={args.topic}"
            f"&type=mjpeg&quality={args.quality}")
+    if args.width is not None:
+        url += f"&width={args.width}&height={args.height}"
 
     # Tunnel SSH (le mot de passe de la Raspberry sera demandé dans ce terminal)
     cmd = ["ssh", "-N", "-o", "ServerAliveInterval=30",
@@ -84,17 +123,54 @@ def main():
         if not cap.isOpened():
             sys.exit("Impossible d'ouvrir le flux. web_video_server est-il lancé sur la Jetson ?")
 
+        writer = None
+        if args.frames_dir:
+            os.makedirs(args.frames_dir, exist_ok=True)
+        n = 0
+        saved = 0
+        min_dt = 1.0 / args.fps if args.fps > 0 else 0.0
+        last_t = 0.0
+
         print("Appuyez sur 'q' dans la fenêtre pour quitter.")
         while True:
             ok, frame = cap.read()
             if not ok:
                 print("Flux interrompu.")
                 break
-            cv2.imshow("Camera Jetson", frame)
+
+            # Limitation de cadence : on ignore les images trop rapprochées
+            now = time.time()
+            if now - last_t < min_dt:
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    break
+                continue
+            last_t = now
+
+            if args.record:
+                if writer is None:
+                    h, w = frame.shape[:2]
+                    rec_fps = args.fps if args.fps > 0 else 10.0
+                    writer = cv2.VideoWriter(args.record, cv2.VideoWriter_fourcc(*"mp4v"),
+                                             rec_fps, (w, h))
+                writer.write(frame)
+
+            if args.frames_dir and n % max(1, args.every) == 0:
+                name = f"{time.strftime('%Y%m%d_%H%M%S')}_{n:06d}.jpg"
+                cv2.imwrite(os.path.join(args.frames_dir, name), frame,
+                            [cv2.IMWRITE_JPEG_QUALITY, 95])
+                saved += 1
+            n += 1
+
+            cv2.imshow("Camera Jetson" + (" [REC]" if recording else ""), frame)
             if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
+
         cap.release()
+        if writer is not None:
+            writer.release()
         cv2.destroyAllWindows()
+        if recording:
+            print(f"{n} images traitées, {saved} images JPEG sauvegardées.")
 
     except KeyboardInterrupt:
         pass
