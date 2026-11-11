@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>obstacle_stop</name>
+  <version>0.0.1</version>
+  <description>Stops the vehicle when the lidar detects a nearby obstacle.</description>
+  <maintainer email="a.pierreditlambert@gmail.com">GeiCar maintainers</maintainer>
+  <license>GPL-2.0-only</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

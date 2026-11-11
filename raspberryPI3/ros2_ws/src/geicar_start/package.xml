@@ -16,6 +16,7 @@
   <exec_depend>joystick_ros2</exec_depend>
   <exec_depend>can</exec_depend>
   <exec_depend>car_control</exec_depend>
+  <exec_depend>obstacle_stop</exec_depend>
   <exec_depend>imu_filter_madgwick</exec_depend>
   <exec_depend>car_control</exec_depend>
   <exec_depend>system_check</exec_depend>

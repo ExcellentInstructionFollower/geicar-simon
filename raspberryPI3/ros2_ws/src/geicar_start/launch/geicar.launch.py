@@ -36,6 +36,13 @@ def generate_launch_description():
         emulate_tty=True
     )
 
+    obstacle_stop_node = Node(
+        package="obstacle_stop",
+        executable="obstacle_stop_node",
+        output="screen",
+        emulate_tty=True
+    )
+
 
     config_dir = os.path.join(get_package_share_directory('imu_filter_madgwick'), 'config')
 
@@ -59,6 +66,7 @@ def generate_launch_description():
     ld.add_action(can_rx_node)
     ld.add_action(can_tx_node)
     ld.add_action(car_control_node)
+    ld.add_action(obstacle_stop_node)
     ld.add_action(imu_filter_madgwick_node)
     ld.add_action(system_check_node)
 

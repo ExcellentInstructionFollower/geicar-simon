@@ -7,6 +7,7 @@
 #include "interfaces/msg/motors_feedback.hpp"
 #include "interfaces/msg/steering_calibration.hpp"
 #include "interfaces/msg/joystick_order.hpp"
+#include "std_msgs/msg/bool.hpp"
 
 #include "std_srvs/srv/empty.hpp"
 
@@ -44,6 +45,9 @@ public:
 
         subscription_steering_calibration_ = this->create_subscription<interfaces::msg::SteeringCalibration>(
         "steering_calibration", 10, std::bind(&car_control::steeringCalibrationCallback, this, _1));
+
+        subscription_obstacle_stop_ = this->create_subscription<std_msgs::msg::Bool>(
+        "obstacle_stop", 10, std::bind(&car_control::obstacleStopCallback, this, _1));
 
 
         
@@ -107,6 +111,19 @@ private:
         //currentAngle = motorsFeedback.steering_angle;
     }
 
+    void obstacleStopCallback(const std_msgs::msg::Bool & msg){
+        obstacleStopReceived = true;
+        lastObstacleStopMessage = std::chrono::steady_clock::now();
+        if (obstacleStopActive != msg.data){
+            obstacleStopActive = msg.data;
+            if (obstacleStopActive){
+                RCLCPP_WARN(this->get_logger(), "Obstacle too close: stopping motors");
+            } else {
+                RCLCPP_INFO(this->get_logger(), "Obstacle clear: releasing motor stop");
+            }
+        }
+    }
+
 
     /* Update PWM commands : leftRearPwmCmd, rightRearPwmCmd, steeringPwmCmd
     *
@@ -120,7 +137,11 @@ private:
 
         auto motorsOrder = interfaces::msg::MotorsOrder();
 
-        if (!start){    //Car stopped
+        const auto now = std::chrono::steady_clock::now();
+        const bool obstacleStatusStale = !obstacleStopReceived ||
+            now - lastObstacleStopMessage > std::chrono::milliseconds(500);
+
+        if (!start || obstacleStopActive || obstacleStatusStale){    //Stopped, obstacle detected, or safety status unavailable
             leftRearPwmCmd = STOP;
             rightRearPwmCmd = STOP;
             //steeringPwmCmd = STOP;
@@ -213,6 +234,9 @@ private:
     //General variables
     bool start;
     int mode;    //0 : Manual    1 : Auto    2 : Calibration
+    bool obstacleStopActive = true;
+    bool obstacleStopReceived = false;
+    std::chrono::steady_clock::time_point lastObstacleStopMessage{};
 
     
     //Motors feedback variables
@@ -236,6 +260,7 @@ private:
     rclcpp::Subscription<interfaces::msg::JoystickOrder>::SharedPtr subscription_joystick_order_;
     rclcpp::Subscription<interfaces::msg::MotorsFeedback>::SharedPtr subscription_motors_feedback_;
     rclcpp::Subscription<interfaces::msg::SteeringCalibration>::SharedPtr subscription_steering_calibration_;
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr subscription_obstacle_stop_;
 
     //Timer
     rclcpp::TimerBase::SharedPtr timer_;
