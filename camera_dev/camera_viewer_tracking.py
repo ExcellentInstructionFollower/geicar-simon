@@ -9,16 +9,24 @@ terminal 1:
   ssh -J pi@10.105.1.168 jetson@192.168.1.10
   sudo docker start -ai ros-humble (à faire une seule fois pour la voiture)
   ros2 launch geicar_start_jetson geicar.jetson.launch.py
+   ou
+  ros2 run usb_cam usb_cam_node_exe --ros-args -p video_device:=/dev/video0 -p image_width:=640 -p image_height:=40 -p framerate:=30.0 -p pixel_format:=yuyv
 
-terminal 1: 
+
+terminal 2: 
 serveur vidéo (autre terminal) :
   ssh -J pi@10.105.1.168 jetson@192.168.1.10
   sudo docker exec -it ros-humble bash
   source /opt/ros/humble/setup.bash
   ros2 run web_video_server web_video_server
-  ou
-  ros2 run usb_cam usb_cam_node_exe --ros-args -p video_device:=/dev/video0 -p image_width:=640 -p image_height:=40 -p framerate:=30.0 -p pixel_format:=yuyv
 
+sur la jetson : 
+python3 ~/camera_dev/trt_pose_server.py
+
+terminal 4 (docker):
+source /opt/ros/humble/setup.bash
+python3 /root/camera_dev/ros2_pose_bridge.py
+ 
 Usage (avec tracking) :
   python3 camera_viewer.py --pi 10.105.1.168 --weights weights.pt
 
@@ -29,12 +37,12 @@ scp -J pi@10.105.1.168 /chemin/local/mon_script.py jetson@192.168.1.10:/home/cam
 # Envoyer un dossier complet
 scp -J pi@10.105.1.168 -r /chemin/local/mon_projet jetson@192.168.1.10:/home/camera_dev
 
-rsync -avz -e "ssh -J pi@10.105.1.168" ~/Memomove/geicar-simon/camera_dev jetson@192.168.1.10:~/camera_dev
+rsync -avz -e "ssh -J pi@10.105.1.168" ~/Memomove/geicar-simon/camera_dev jetson@192.168.1.10:~/
 
 
 /usr/src/tensorrt/bin/trtexec \
-  --onnx=~/camera_dev/weights.onnx \
-  --saveEngine=/camera_dev/weights.engine \
+  --onnx=~/camera_dev/yolov8n-pose.onnx \
+  --saveEngine=/camera_dev/yolov8n-pose.engine \
   --fp16 \
   --workspace=1024
 

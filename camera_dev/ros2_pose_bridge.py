@@ -48,7 +48,7 @@ class Ros2PoseBridge(Node):
             return
 
         # Envoi au serveur TensorRT sur l'hôte
-        ok, jpg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+        ok, jpg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 50])
         if not ok:
             return
         data = jpg.tobytes()
