@@ -36,6 +36,21 @@ def generate_launch_description():
         emulate_tty=True
     )
 
+    safety_stop_node = Node(
+        package="safety_stop",
+        executable="safety_stop_node",
+        parameters=[{
+            "stop_dist_front_cm": 30,
+            "stop_dist_rear_cm": 30,
+            "slow_dist_front_cm": 55,
+            "slow_dist_rear_cm": 55,
+            "us_timeout_ms": 99999999999,
+            "cmd_timeout_ms": 999,
+            "log_actions": True
+        }],
+        emulate_tty=True
+    )
+
     obstacle_stop_node = Node(
         package="obstacle_stop",
         executable="obstacle_stop_node",
@@ -66,7 +81,8 @@ def generate_launch_description():
     ld.add_action(can_rx_node)
     ld.add_action(can_tx_node)
     ld.add_action(car_control_node)
-    ld.add_action(obstacle_stop_node)
+    ld.add_action(safety_stop_node)
+    #ld.add_action(obstacle_stop_node)
     ld.add_action(imu_filter_madgwick_node)
     ld.add_action(system_check_node)
 
