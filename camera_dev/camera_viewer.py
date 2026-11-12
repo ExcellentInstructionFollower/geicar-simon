@@ -18,7 +18,7 @@ serveur vidéo (autre terminal) :
 
 
 lancement caméra avec param
-  ros2 run usb_cam usb_cam_node_exe --ros-args -p video_device:=/dev/video0 -p image_width:=1280 -p image_height:=960 -p framerate:=30.0 -p pixel_format:=yuyv
+  ros2 run usb_cam usb_cam_node_exe --ros-args -p video_device:=/dev/video0 -p image_width:=640 -p image_height:=40 -p framerate:=30.0 -p pixel_format:=yuyv
 
 Usage :
   python3 camera_viewer.py --pi 10.105.1.168
