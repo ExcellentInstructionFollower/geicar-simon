@@ -6,7 +6,7 @@ import time
 
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import LaserScan
+from interfaces.msg import Ultrasonic
 from std_msgs.msg import Bool
 
 
@@ -16,24 +16,16 @@ class ObstacleStopNode(Node):
         super().__init__('obstacle_stop_node')
 
         # Paramètres modifiables au lancement, sans changer le code.
-        self.declare_parameter('scan_topic', '/scan')
+        self.declare_parameter('us_topic', '/us_data')
         self.declare_parameter('stop_topic', '/obstacle_stop')
-        self.declare_parameter('stop_distance', 0.6)
-        self.declare_parameter('release_distance', 0.75)
-        self.declare_parameter('front_center_angle_deg', 0.0)
-        self.declare_parameter('front_half_angle_deg', 35.0)
+        self.declare_parameter('stop_distance', 60)
+        self.declare_parameter('release_distance', 75)
         self.declare_parameter('scan_timeout', 0.5)
 
         # Lit les paramètres. Les calculs d'angles se font en radians,
         # même si les valeurs sont configurées en degrés.
         self._stop_distance = float(self.get_parameter('stop_distance').value)
         self._release_distance = float(self.get_parameter('release_distance').value)
-        self._front_center_angle = math.radians(
-            float(self.get_parameter('front_center_angle_deg').value)
-        )
-        self._front_half_angle = math.radians(
-            float(self.get_parameter('front_half_angle_deg').value)
-        )
         self._scan_timeout = float(self.get_parameter('scan_timeout').value)
 
         # Vérifie les paramètres pour éviter une configuration incohérente.
@@ -41,18 +33,16 @@ class ObstacleStopNode(Node):
             raise ValueError('stop_distance must be greater than zero')
         if self._release_distance <= self._stop_distance:
             raise ValueError('release_distance must be greater than stop_distance')
-        if not 0.0 < self._front_half_angle <= math.pi:
-            raise ValueError('front_half_angle_deg must be in (0, 180]')
         if self._scan_timeout <= 0.0:
             raise ValueError('scan_timeout must be greater than zero')
 
-        scan_topic = str(self.get_parameter('scan_topic').value)
+        us_topic = str(self.get_parameter('us_topic').value)
         stop_topic = str(self.get_parameter('stop_topic').value)
 
         # L'éditeur envoie l'état d'arrêt; l'abonné reçoit les scans du lidar.
         self._stop_publisher = self.create_publisher(Bool, stop_topic, 10)
         self._scan_subscription = self.create_subscription(
-            LaserScan, scan_topic, self._scan_callback, 10
+            Ultrasonic, us_topic, self._us_callback, 10
         )
 
         # Au démarrage, on demande l'arrêt tant qu'aucun scan récent n'a été reçu.
@@ -63,51 +53,21 @@ class ObstacleStopNode(Node):
         self._status_timer = self.create_timer(0.1, self._publish_status)
 
         self.get_logger().info(
-            f'Watching {scan_topic}; stopping below {self._stop_distance:.2f} m '
+            f'Watching {us_topic}; stopping below {self._stop_distance:.2f} m '
             f'and releasing above {self._release_distance:.2f} m '
-            f'within +/-{math.degrees(self._front_half_angle):.1f} degrees of '
-            f'{math.degrees(self._front_center_angle):.1f} degrees. '
             f'Publishing stop state on {stop_topic}.'
         )
 
-    def _scan_callback(self, scan: LaserScan):
+    def _us_callback(self, us_data: Ultrasonic):
         # Mémorise l'heure de réception pour détecter ensuite un scan périmé.
         self._last_scan_time = time.monotonic()
 
-        # Sans mesures exploitables, on adopte un comportement prudent et on arrête.
-        if not scan.ranges or scan.angle_increment == 0.0:
-            self._set_stop(True, 'invalid or empty lidar scan')
-            return
-
-        points_in_front = 0
-        valid_distances = []
-        for index, distance in enumerate(scan.ranges):
-            # Chaque élément de ranges correspond à un angle :
-            # angle_min + index * angle_increment.
-            angle = scan.angle_min + index * scan.angle_increment
-
-            # Ramène l'angle dans [-pi, pi], puis mesure son écart au centre
-            # du secteur surveillé à l'avant du véhicule.
-            angle = math.atan2(math.sin(angle), math.cos(angle))
-            angle_from_front = math.atan2(
-                math.sin(angle - self._front_center_angle),
-                math.cos(angle - self._front_center_angle),
-            )
-            if abs(angle_from_front) > self._front_half_angle:
-                continue
-
-            points_in_front += 1
-
-            # Ignore les valeurs infinies/NaN (pas de retour lidar) et les
-            # distances hors de la portée maximale annoncée par le scan.
-            if math.isfinite(distance) and 0.0 <= distance <= scan.range_max:
-                valid_distances.append(distance)
-
-        # Si le scan ne couvre pas le secteur demandé, on ne peut pas garantir
-        # que la voie est libre.
-        if points_in_front == 0:
-            self._set_stop(True, 'scan contains no measurements in the front sector')
-            return
+        valid_distances = [us_data.front_left, 
+            us_data.front_center, 
+            us_data.front_right,
+            us_data.rear_left, 
+            us_data.rear_center, 
+            us_data.rear_right]
 
         # Si toutes les mesures valides sont absentes (par exemple inf),
         # aucune proximité d'obstacle n'est signalée.
@@ -144,7 +104,7 @@ class ObstacleStopNode(Node):
             or time.monotonic() - self._last_scan_time > self._scan_timeout
         )
         if scan_is_stale:
-            self._set_stop(True, 'lidar scan is missing or stale')
+            self._set_stop(True, 'ultrasound scan is missing or stale')
 
         # Bool.data vaut True pour demander l'arrêt, False pour le relâcher.
         msg = Bool()

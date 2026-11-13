@@ -13,7 +13,8 @@ def generate_launch_description():
         output='screen',
         parameters=[{
             'serial_port': '/dev/ttyUSB0',
-            'serial_baudrate': 115200,  # A1 / A2
+            #'serial_baudrate': 115200,  # A1 / A2
+            'serial_baudrate': 256000,
             'frame_id': 'laser',
             'inverted': False,
             'angle_compensate': True,
