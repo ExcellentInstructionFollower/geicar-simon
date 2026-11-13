@@ -7,6 +7,7 @@ import time
 import rclpy
 from rclpy.node import Node
 from interfaces.msg import Ultrasonic
+from interfaces.msg import MotorsOrder
 from std_msgs.msg import Bool
 
 
@@ -18,8 +19,8 @@ class ObstacleStopNode(Node):
         # Paramètres modifiables au lancement, sans changer le code.
         self.declare_parameter('us_topic', '/us_data')
         self.declare_parameter('stop_topic', '/obstacle_stop')
-        self.declare_parameter('stop_distance', 60)
-        self.declare_parameter('release_distance', 75)
+        self.declare_parameter('stop_distance', 30)
+        self.declare_parameter('release_distance', 45)
         self.declare_parameter('scan_timeout', 0.5)
 
         # Lit les paramètres. Les calculs d'angles se font en radians,
