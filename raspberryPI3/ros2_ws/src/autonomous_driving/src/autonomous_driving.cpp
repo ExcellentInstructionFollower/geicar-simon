@@ -1,3 +1,8 @@
+#define STOP 0
+#define FORWARD 1
+#define BACKWARD 2
+#define LEFT 3
+#define RIGHT 4
 
 #include "rclcpp/rclcpp.hpp"
 
@@ -38,7 +43,7 @@ public:
         subscription_start_ =
             this->create_subscription<interfaces::msg::AutonomousCommand>(
                 "autonomous_command", 10,
-                std::bind(&autonomous_drive::startCallback, this, _1));
+                std::bind(&autonomous_drive::moveTypeCallback, this, _1));
 
         // Timer: update commands every 50 ms
         timer_ = this->create_wall_timer(
@@ -56,10 +61,12 @@ private:
     // START / STOP CALLBACK
     // ==========================================
 
-    void startCallback(
+    void moveTypeCallback(
         const interfaces::msg::AutonomousCommand::SharedPtr msg)
     {
-        if (msg->start && !sequenceStarted)
+        moveType = msg->move;
+
+        if (moveType != 0 && !sequenceStarted)
         {
             sequenceStarted = true;
             sequenceFinished = false;
@@ -69,7 +76,7 @@ private:
 
             RCLCPP_INFO(this->get_logger(), "Sequence STARTED");
         }
-        else if (!msg->start)
+        else if (moveType == 0)
         {
             sequenceStarted = false;
             sequenceFinished = false;
@@ -93,26 +100,52 @@ private:
         {
             double elapsed = (this->now() - time_start).seconds();
 
-            if (elapsed < 3.0)
+            if (elapsed < 4.0)
             {
-                // 0-3 seconds: move forward
-                avance(0.5);
-            }
-            else if (elapsed < 6.0)
-            {
-                // 3-6 seconds: move backwards
-                reculer(0.5);
+                // 0-4 seconds: first half of move
+                switch(moveType) {
+                    case FORWARD:
+                        avancer(0.5);
+                        break;
+                    case BACKWARD:
+                        reculer(0.5);
+                        break;
+                    case LEFT:
+                        gauche(0.5, false);
+                        break;
+                    case RIGHT:
+                        droite(0.5, false);
+                        break;
+                    default:
+                        arreter();
+                }
             }
             else if (elapsed < 8.0)
             {
-                // 6-8 seconds: turn right while moving
-                droite(0.3);
+                // 4-8 seconds: turn right while moving
+                switch(moveType) {
+                    case FORWARD:
+                        reculer(0.5);
+                        break;
+                    case BACKWARD:
+                        avancer(0.5);
+                        break;
+                    case LEFT:
+                        droite(0.5, true);
+                        break;
+                    case RIGHT:
+                        gauche(0.5, true);
+                        break;
+                    default:
+                        arreter();
+                }
             }
             else
             {
                 // After 8 seconds: stop
                 arreter();
 
+                sequenceStarted = false;
                 sequenceFinished = true;
 
                 RCLCPP_INFO(
@@ -140,7 +173,7 @@ private:
     // MOVEMENT FUNCTIONS
     // ==========================================
 
-    void avance(float throttle)
+    void avancer(float throttle)
     {
         manualPropulsionCmd(
             throttle, false,
@@ -160,11 +193,21 @@ private:
     }
 
 
-    void droite(float throttle)
+    void gauche(float throttle, bool reverse)
     {
         // Move forward while steering right
         manualPropulsionCmd(
-            throttle, false,
+            throttle, reverse,
+            leftRearPwmCmd, rightRearPwmCmd);
+
+        steeringAngle = -50;
+    }
+
+    void droite(float throttle, bool reverse)
+    {
+        // Move forward while steering right
+        manualPropulsionCmd(
+            throttle, reverse,
             leftRearPwmCmd, rightRearPwmCmd);
 
         steeringAngle = 50;
@@ -223,6 +266,7 @@ private:
     int8_t leftRearPwmCmd = 50;
     int8_t rightRearPwmCmd = 50;
     int8_t steeringAngle = 0;
+    int8_t moveType = STOP;
 
 
     // ==========================================
