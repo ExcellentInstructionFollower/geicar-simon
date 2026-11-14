@@ -30,6 +30,9 @@ python3 /root/camera_dev/ros2_pose_bridge.py
 Usage (avec tracking) :
   python3 camera_viewer.py --pi 10.105.1.168 --weights weights.pt
 
+
+
+
 envoi code
 # Envoyer un fichier unique
 scp -J pi@10.105.1.168 /chemin/local/mon_script.py jetson@192.168.1.10:/home/camera_dev
@@ -41,10 +44,10 @@ rsync -avz -e "ssh -J pi@10.105.1.168" ~/Memomove/geicar-simon/camera_dev jetson
 
 
 /usr/src/tensorrt/bin/trtexec \
-  --onnx=~/camera_dev/yolov8n-pose.onnx \
-  --saveEngine=/camera_dev/yolov8n-pose.engine \
+  --onnx=/home/camera_dev/yolov8n-pose_320.onnx \
+  --saveEngine=/home/camera_dev/yolov8n-pose_320.engine \
   --fp16 \
-  --workspace=1024
+  --workspace=512
 
 """
 

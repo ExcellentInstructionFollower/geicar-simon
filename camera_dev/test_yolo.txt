@@ -1,0 +1,47 @@
+
+YOLOv8 640x480
+
+average rate: 1.956
+	min: 0.511s max: 0.511s std dev: 0.00015s window: 3
+average rate: 1.957
+	min: 0.509s max: 0.512s std dev: 0.00106s window: 5
+average rate: 1.958
+	min: 0.509s max: 0.512s std dev: 0.00111s window: 7
+average rate: 1.958
+	min: 0.509s max: 0.512s std dev: 0.00112s window: 9
+average rate: 1.955
+	min: 0.509s max: 0.514s std dev: 0.00155s window: 11
+average rate: 1.955
+	min: 0.509s max: 0.514s std dev: 0.00147s window: 13
+average rate: 1.955
+	min: 0.509s max: 0.514s std dev: 0.00155s window: 15
+
+
+YOLOv8 320x320
+average rate: 7.386
+	min: 0.132s max: 0.141s std dev: 0.00281s window: 9
+average rate: 7.384
+	min: 0.132s max: 0.141s std dev: 0.00269s window: 17
+average rate: 7.378
+	min: 0.131s max: 0.144s std dev: 0.00319s window: 25
+average rate: 7.422
+
+
+
+YOLO26-
+^Croot@geicar:/# ros2 topic hz /image_pose
+average rate: 1.782
+	min: 0.560s max: 0.563s std dev: 0.00106s window: 3
+average rate: 1.800
+	min: 0.545s max: 0.563s std dev: 0.00716s window: 5
+average rate: 1.790
+	min: 0.545s max: 0.573s std dev: 0.00856s window: 7
+average rate: 1.799
+	min: 0.545s max: 0.573s std dev: 0.00922s window: 9
+average rate: 1.805
+	min: 0.545s max: 0.573s std dev: 0.00910s window: 11
+average rate: 1.809
+	min: 0.545s max: 0.573s std dev: 0.00898s window: 13
+
+
+
