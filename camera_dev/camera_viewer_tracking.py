@@ -10,7 +10,7 @@ terminal 1:
   sudo docker start -ai ros-humble (à faire une seule fois pour la voiture)
   ros2 launch geicar_start_jetson geicar.jetson.launch.py
    ou
-  ros2 run usb_cam usb_cam_node_exe --ros-args -p video_device:=/dev/video0 -p image_width:=640 -p image_height:=40 -p framerate:=30.0 -p pixel_format:=yuyv
+  ros2 run usb_cam usb_cam_node_exe --ros-args -p video_device:=/dev/video0 -p image_width:=320 -p image_height:=240 -p framerate:=30.0 -p pixel_format:=yuyv
 
 
 terminal 2: 
@@ -21,7 +21,7 @@ serveur vidéo (autre terminal) :
   ros2 run web_video_server web_video_server
 
 sur la jetson : 
-python3 ~/camera_dev/trt_pose_server.py
+python3 /home/jetson/camera_dev/trt_pose_server.py --weights /home/jetson/camera_dev/yolov8n-pose_320.engine
 
 terminal 4 (docker):
 source /opt/ros/humble/setup.bash
@@ -29,6 +29,8 @@ python3 /root/camera_dev/ros2_pose_bridge.py
  
 Usage (avec tracking) :
   python3 camera_viewer.py --pi 10.105.1.168 --weights weights.pt
+
+  python3 camera_viewer_tracking.py --pi 10.105.1.168 --topic /image_pose --no-track --record test_jetson_yolov8.mp4 --fps 10  --quality 50
 
 
 
@@ -44,8 +46,8 @@ rsync -avz -e "ssh -J pi@10.105.1.168" ~/Memomove/geicar-simon/camera_dev jetson
 
 
 /usr/src/tensorrt/bin/trtexec \
-  --onnx=/home/camera_dev/yolov8n-pose_320.onnx \
-  --saveEngine=/home/camera_dev/yolov8n-pose_320.engine \
+  --onnx=/home/jetson/camera_dev/yolov8n-pose_320.onnx \
+  --saveEngine=/home/jetson/camera_dev/yolov8n-pose_320.engine \
   --fp16 \
   --workspace=512
 

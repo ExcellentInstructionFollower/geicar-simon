@@ -1,19 +1,18 @@
 #!/usr/bin/env python3
+import argparse
 import ctypes
 import json
+import os
 import socket
 import struct
+import sys
 import cv2
 import numpy as np
 import tensorrt as trt
 
-ENGINE_PATH = "./yolov8n-pose.engine"
-HOST = "127.0.0.1"
-PORT = 5555
-CONF_THRES = 0.5
+HOST = "0.0.0.0"
 IOU_THRES = 0.45
 
-# Chargement direct du runtime CUDA système (aucun package externe requis)
 cudart = ctypes.CDLL("libcudart.so")
 cudart.cudaSetDevice.argtypes = [ctypes.c_int]
 cudart.cudaSetDevice.restype = ctypes.c_int
@@ -29,8 +28,8 @@ CUDA_MEMCPY_DEVICE_TO_HOST = 2
 
 
 class TrtYoloPose:
-    def __init__(self, engine_path):
-        # Initialisation du contexte CUDA sur le GPU 0
+    def __init__(self, engine_path, conf_thres=0.5):
+        self.conf_thres = conf_thres
         assert cudart.cudaSetDevice(0) == 0, "Erreur cudaSetDevice(0)"
         cudart.cudaFree(None)
 
@@ -62,7 +61,8 @@ class TrtYoloPose:
 
         self.in_h = self.inputs[0]["shape"][2]
         self.in_w = self.inputs[0]["shape"][3]
-        print(f"Moteur TensorRT chargé | Entrée: {self.inputs[0]['shape']} | Sortie: {self.outputs[0]['shape']}")
+        self.canvas = np.full((self.in_h, self.in_w, 3), 114, dtype=np.uint8)
+        print(f"Moteur TensorRT chargé ({engine_path}) | Entrée: {self.inputs[0]['shape']} | Sortie: {self.outputs[0]['shape']}")
 
     def preprocess(self, img_bgr):
         h, w = img_bgr.shape[:2]
@@ -70,13 +70,15 @@ class TrtYoloPose:
         nw, nh = int(round(w * scale)), int(round(h * scale))
         resized = cv2.resize(img_bgr, (nw, nh), interpolation=cv2.INTER_LINEAR)
 
-        canvas = np.full((self.in_h, self.in_w, 3), 114, dtype=np.uint8)
+        self.canvas.fill(114)
         pad_x = (self.in_w - nw) // 2
         pad_y = (self.in_h - nh) // 2
-        canvas[pad_y:pad_y + nh, pad_x:pad_x + nw] = resized
+        self.canvas[pad_y:pad_y + nh, pad_x:pad_x + nw] = resized
 
-        blob = cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB).transpose(2, 0, 1)
-        blob = np.ascontiguousarray(blob, dtype=np.float32) / 255.0
+        # Conversion BGR->RGB, HWC->CHW et normalisation 1/255 en C++ (NEON)
+        blob = cv2.dnn.blobFromImage(
+            self.canvas, 1.0 / 255.0, (self.in_w, self.in_h), swapRB=True, crop=False
+        )
         return blob, scale, pad_x, pad_y
 
     def infer(self, img_bgr):
@@ -106,11 +108,10 @@ class TrtYoloPose:
     def postprocess(self, raw, scale, pad_x, pad_y):
         detections = []
 
-        # Cas 1 : Modèle YOLO26 end-to-end sans NMS -> shape (300, 57)
         if raw.shape[-1] == 57:
             for row in raw:
                 score = float(row[4])
-                if score < CONF_THRES:
+                if score < self.conf_thres:
                     continue
                 x1 = (row[0] - pad_x) / scale
                 y1 = (row[1] - pad_y) / scale
@@ -126,10 +127,9 @@ class TrtYoloPose:
                 })
             return detections
 
-        # Cas 2 : Modèle YOLO standard avec NMS -> shape (56, 8400)
         preds = raw.T if raw.shape[0] == 56 else raw
         scores = preds[:, 4]
-        mask = scores >= CONF_THRES
+        mask = scores >= self.conf_thres
         preds = preds[mask]
         scores = scores[mask]
 
@@ -143,7 +143,7 @@ class TrtYoloPose:
         bh = h / scale
 
         boxes_xywh = np.stack([x1, y1, bw, bh], axis=1).tolist()
-        indices = cv2.dnn.NMSBoxes(boxes_xywh, scores.tolist(), CONF_THRES, IOU_THRES)
+        indices = cv2.dnn.NMSBoxes(boxes_xywh, scores.tolist(), self.conf_thres, IOU_THRES)
 
         if len(indices) > 0:
             for idx in np.array(indices).flatten():
@@ -170,27 +170,38 @@ def recv_exact(conn, n):
 
 
 def main():
-    model = TrtYoloPose(ENGINE_PATH)
+    parser = argparse.ArgumentParser(description="Serveur d'inférence TensorRT YOLO Pose")
+    parser.add_argument("-w", "--weights", required=True, help="Chemin vers le fichier .engine")
+    parser.add_argument("-p", "--port", type=int, default=5555, help="Port TCP (défaut: 5555)")
+    parser.add_argument("-c", "--conf", type=float, default=0.5, help="Seuil de confiance (défaut: 0.5)")
+    args = parser.parse_args()
+
+    if not os.path.isfile(args.weights):
+        sys.exit(f"Erreur : fichier introuvable -> {args.weights}")
+
+    model = TrtYoloPose(args.weights, conf_thres=args.conf)
     srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    srv.bind((HOST, PORT))
+    srv.bind((HOST, args.port))
     srv.listen(1)
-    print(f"Serveur TensorRT en écoute sur {HOST}:{PORT}...")
+    print(f"Serveur TensorRT en écoute sur {HOST}:{args.port}...")
 
     while True:
         conn, _ = srv.accept()
+        conn.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         try:
             while True:
-                header = recv_exact(conn, 4)
+                # En-tête 12 octets : hauteur (uint32), largeur (uint32), taille octets (uint32)
+                header = recv_exact(conn, 12)
                 if not header:
                     break
-                length = struct.unpack("!I", header)[0]
-                jpg_bytes = recv_exact(conn, length)
-                if not jpg_bytes:
+                h, w, length = struct.unpack("!III", header)
+                raw_bytes = recv_exact(conn, length)
+                if not raw_bytes:
                     break
 
-                frame = cv2.imdecode(np.frombuffer(jpg_bytes, np.uint8), cv2.IMREAD_COLOR)
-                dets = model.infer(frame) if frame is not None else []
+                frame = np.frombuffer(raw_bytes, dtype=np.uint8).reshape((h, w, 3))
+                dets = model.infer(frame)
                 payload = json.dumps(dets).encode("utf-8")
                 conn.sendall(struct.pack("!I", len(payload)) + payload)
         except (ConnectionResetError, BrokenPipeError):
