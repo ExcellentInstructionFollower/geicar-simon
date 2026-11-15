@@ -22,6 +22,7 @@ set(msg_files
   "msg/Gnss.msg"
   "msg/SystemCheck.msg"
   "msg/LogEntry.msg"
+  "msg/AutonomousCommand.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
