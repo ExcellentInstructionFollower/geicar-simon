@@ -288,17 +288,9 @@ private:
 int main(int argc, char * argv[])
 {
 
-    const YAML::Node config = YAML::LoadFile("steps.yaml");
+    const YAML::Node config = YAML::LoadFile("../steps.yaml");
     const YAML::Node sequence = config["sequence-2"];
 
-    for(const auto& step : sequence)
-    {
-        const std::string nom = step.first.as<std::string>();
-        const std::string direction = step.second["direction"].as<std::string>();
-        const double duree = step.second["duration"].as<double>();
-
-        std::cout << nom << " " << direction << " " << duree << '\n';
-    }
 
     rclcpp::init(argc, argv);
 

@@ -6,7 +6,7 @@ import time
 
 import rclpy
 from rclpy.node import Node
-from interfaces.msg import Ultrasonic
+from interfaces.msg import AutonomousCommand
 from std_msgs.msg import Bool
 
 
@@ -16,47 +16,27 @@ class ObstacleStopNode(Node):
         super().__init__('obstacle_stop_node')
 
         # Paramètres modifiables au lancement, sans changer le code.
-        self.declare_parameter('us_topic', '/us_data')
-        self.declare_parameter('stop_topic', '/obstacle_stop')
-        self.declare_parameter('stop_distance', 60)
-        self.declare_parameter('release_distance', 75)
-        self.declare_parameter('scan_timeout', 0.5)
-
-        # Lit les paramètres. Les calculs d'angles se font en radians,
-        # même si les valeurs sont configurées en degrés.
-        self._stop_distance = float(self.get_parameter('stop_distance').value)
-        self._release_distance = float(self.get_parameter('release_distance').value)
-        self._scan_timeout = float(self.get_parameter('scan_timeout').value)
-
-        # Vérifie les paramètres pour éviter une configuration incohérente.
-        if self._stop_distance <= 0.0:
-            raise ValueError('stop_distance must be greater than zero')
-        if self._release_distance <= self._stop_distance:
-            raise ValueError('release_distance must be greater than stop_distance')
-        if self._scan_timeout <= 0.0:
-            raise ValueError('scan_timeout must be greater than zero')
+        self.declare_parameter('command_topic', '/autonomous_command')
+        self.declare_parameter('feedback_topic', '/autonomous_feedback')
 
         us_topic = str(self.get_parameter('us_topic').value)
         stop_topic = str(self.get_parameter('stop_topic').value)
 
         # L'éditeur envoie l'état d'arrêt; l'abonné reçoit les scans du lidar.
-        self._stop_publisher = self.create_publisher(Bool, stop_topic, 10)
-        self._scan_subscription = self.create_subscription(
-            Ultrasonic, us_topic, self._us_callback, 10
+        self._command_publisher = self.create_publisher(AutonomousCommand, autonomous_command, 10)
+        self._feedback_subscription = self.create_subscription(
+            Bool, autonomous_feedback, self._feedback_callback, 10
         )
-
-        # Au démarrage, on demande l'arrêt tant qu'aucun scan récent n'a été reçu.
-        self._last_scan_time = None
-        self._stop_requested = True
 
         # Publie régulièrement l'état, y compris si aucun scan n'arrive.
         self._status_timer = self.create_timer(0.1, self._publish_status)
 
+        """
         self.get_logger().info(
             f'Watching {us_topic}; stopping below {self._stop_distance:.2f} m '
             f'and releasing above {self._release_distance:.2f} m '
             f'Publishing stop state on {stop_topic}.'
-        )
+        )"""
 
     def _us_callback(self, us_data: Ultrasonic):
         # Mémorise l'heure de réception pour détecter ensuite un scan périmé.
