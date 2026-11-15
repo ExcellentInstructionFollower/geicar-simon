@@ -38,7 +38,7 @@ class ObstacleStopNode(Node):
             f'Publishing stop state on {stop_topic}.'
         )"""
 
-    def _us_callback(self, us_data: Ultrasonic):
+    def _feedback_callback(self, feedback: Bool):
         # Mémorise l'heure de réception pour détecter ensuite un scan périmé.
         self._last_scan_time = time.monotonic()
 
