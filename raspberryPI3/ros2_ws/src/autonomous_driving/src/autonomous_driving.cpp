@@ -14,6 +14,7 @@
 #include <yaml-cpp/yaml.h>
 #include <iostream>
 
+#include "std_msgs/msg/bool.hpp"
 #include "interfaces/msg/motors_order.hpp"
 #include "interfaces/msg/autonomous_command.hpp"
 
@@ -31,6 +32,9 @@ public:
         sequenceStarted = false;
         sequenceFinished = false;
 
+        mustSafetyStop = true;
+        elapsed_before_stop = 0.0f;
+
         // Initialize motor commands
         leftRearPwmCmd = 50;
         rightRearPwmCmd = 50;
@@ -46,6 +50,12 @@ public:
             this->create_subscription<interfaces::msg::AutonomousCommand>(
                 "autonomous_command", 10,
                 std::bind(&autonomous_drive::moveTypeCallback, this, _1));
+
+        // Suscriber : obstacle stop command
+        subscription_stop_ = 
+            this->create_subscription<std_msgs::msg::Bool>(
+                "obstacle_stop", 10,
+                std::bind(&autonomous_drive::obstacleStopCallback, this, _1));
 
         // Timer: update commands every 50 ms
         timer_ = this->create_wall_timer(
@@ -73,6 +83,8 @@ private:
             sequenceStarted = true;
             sequenceFinished = false;
 
+            elapsed_before_stop = 0.0f;
+
             // Record sequence starting time
             time_start = this->now();
 
@@ -89,6 +101,28 @@ private:
         }
     }
 
+    // ==========================================
+    // OBSTACLE STOP CALLBACK
+    // ==========================================
+
+    void obstacleStopCallback(const std_msgs::msg::Bool::SharedPtr msg)
+    {
+        bool previousStopState = mustSafetyStop;
+        mustSafetyStop = msg->data;
+
+        if (mustSafetyStop) {
+            if (!previousStopState) {
+                elapsed_before_stop = elapsed_before_stop + (this->now() - time_start).seconds();
+                RCLCPP_INFO(this->get_logger(), "Sequence stopped due to obstacle");
+            }
+            
+        }
+        else {
+            if (previousStopState) {
+                time_start = this->now();
+            }
+        }
+    }
 
     // ==========================================
     // PERIODIC COMMAND UPDATE
@@ -100,11 +134,14 @@ private:
 
         if (sequenceStarted && !sequenceFinished)
         {
-            double elapsed = (this->now() - time_start).seconds();
+            double elapsed = elapsed_before_stop + (this->now() - time_start).seconds();
 
-            if (elapsed < 4.0)
+            if (mustSafetyStop){
+                arreter();
+            }
+            else if (elapsed < 4.0)
             {
-                // 0-4 seconds: first half of move
+                // 0-3 seconds: first half of move
                 switch(moveType) {
                     case FORWARD:
                         avancer(0.5);
@@ -263,6 +300,9 @@ private:
     bool sequenceStarted = false;
     bool sequenceFinished = false;
 
+    bool mustSafetyStop = true;
+    double elapsed_before_stop = 0.0f;
+
     rclcpp::Time time_start;
 
     int8_t leftRearPwmCmd = 50;
@@ -280,6 +320,9 @@ private:
 
     rclcpp::Subscription<interfaces::msg::AutonomousCommand>::SharedPtr
         subscription_start_;
+    
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr
+        subscription_stop_;
 
     rclcpp::TimerBase::SharedPtr timer_;
 };
@@ -288,9 +331,10 @@ private:
 int main(int argc, char * argv[])
 {
 
-    const YAML::Node config = YAML::LoadFile("../steps.yaml");
-    const YAML::Node sequence = config["sequence-2"];
-
+    
+    //const YAML::Node config = YAML::LoadFile("../steps.yaml");
+    //const YAML::Node sequence = config["sequence-2"];
+    
 
     rclcpp::init(argc, argv);
 
