@@ -22,7 +22,7 @@ class SequenceGeneratorNode(Node):
         self._sequence_timer = self.create_timer(12.0, self.generate_sequence)
 
     def generate_sequence(self):
-        if self._generated_steps >= 3:
+        if self._generated_steps >= 20:
             self._sequence_timer.cancel()
             return
 
@@ -34,7 +34,7 @@ class SequenceGeneratorNode(Node):
         self.get_logger().info(f'[SEQ-GEN-NODE] Generated step : {move}')
         self._generated_steps += 1
 
-        if self._generated_steps >= 3:
+        if self._generated_steps >= 20:
             self._sequence_timer.cancel()
 
 

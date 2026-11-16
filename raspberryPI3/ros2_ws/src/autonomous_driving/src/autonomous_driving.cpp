@@ -133,10 +133,10 @@ private:
                         avancer(0.5);
                         break;
                     case LEFT:
-                        droite(0.5, true);
+                        gauche(0.5, true);
                         break;
                     case RIGHT:
-                        gauche(0.5, true);
+                        droite(0.5, true);
                         break;
                     default:
                         arreter();
