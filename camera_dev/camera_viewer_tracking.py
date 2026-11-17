@@ -10,10 +10,10 @@ terminal 1:
   sudo docker start -ai ros-humble (à faire une seule fois pour la voiture)
   ros2 launch geicar_start_jetson geicar.jetson.launch.py
    ou
-  ros2 run usb_cam usb_cam_node_exe --ros-args -p video_device:=/dev/video0 -p image_width:=320 -p image_height:=240 -p framerate:=30.0 -p pixel_format:=yuyv
+  ros2 run usb_cam usb_cam_node_exe --ros-args -p video_device:=/dev/video0 -p image_width:=320 -p image_height:=240 -p framerate:=10.0 -p pixel_format:=yuyv
 
 
-terminal 2: 
+terminal 2: Web Server pour transmission video
 serveur vidéo (autre terminal) :
   ssh -J pi@10.105.1.168 jetson@192.168.1.10
   sudo docker exec -it ros-humble bash
@@ -43,6 +43,8 @@ scp -J pi@10.105.1.168 /chemin/local/mon_script.py jetson@192.168.1.10:/home/cam
 scp -J pi@10.105.1.168 -r /chemin/local/mon_projet jetson@192.168.1.10:/home/camera_dev
 
 rsync -avz -e "ssh -J pi@10.105.1.168" ~/Memomove/geicar-simon/camera_dev jetson@192.168.1.10:~/
+
+sudo docker cp ./camera_dev/ ros-humble:/root/
 
 
 /usr/src/tensorrt/bin/trtexec \
