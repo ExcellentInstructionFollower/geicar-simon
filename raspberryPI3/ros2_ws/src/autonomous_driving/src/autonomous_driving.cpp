@@ -330,12 +330,10 @@ private:
 
 int main(int argc, char * argv[])
 {
-
     
     //const YAML::Node config = YAML::LoadFile("../steps.yaml");
     //const YAML::Node sequence = config["sequence-2"];
     
-
     rclcpp::init(argc, argv);
 
     auto node = std::make_shared<autonomous_drive>();
