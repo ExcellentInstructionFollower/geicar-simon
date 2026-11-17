@@ -1,0 +1,44 @@
+sequence-1:
+  1:
+    duration: 0.5
+    direction: FORWARD
+  2:
+    duration: 0.5
+    direction: BACKWARD
+  3:
+    duration: 0.5
+    direction: LEFT
+  4:
+    duration: 0.5
+    direction: RIGHT
+
+sequence-2:
+  1:
+    duration: 1.0
+    direction: FORWARD
+  2:
+    duration: 0.5
+    direction: RIGHT
+  3:
+    duration: 1.0
+    direction: FORWARD
+  4:
+    duration: 0.5
+    direction: LEFT
+
+sequence-3:
+  1:
+    duration: 0.75
+    direction: BACKWARD
+  2:
+    duration: 0.5
+    direction: LEFT
+  3:
+    duration: 0.75
+    direction: BACKWARD
+  4:
+    duration: 0.5
+    direction: RIGHT
+  5:
+    duration: 0.75
+    direction: RIGHT
