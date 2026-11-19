@@ -103,6 +103,8 @@ class GameManagerNode(Node):
         self.publish_next_move()
 
     def publish_next_move(self):
+        ## Sending the initial sequence is working, 
+        ## it does not advance to next movement, due to not yet implemented feedback logic in 
         move = self.sequence[self.playback_index]
         command = AutonomousCommand()
         #command.start = True
