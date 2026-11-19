@@ -20,6 +20,8 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Bool, Int32MultiArray
 from std_srvs.srv import Trigger
+from interfaces.msg import AutonomousCommand
+
 
 
 class GameManagerNode(Node):
@@ -54,6 +56,18 @@ class GameManagerNode(Node):
             Trigger, '/game/start', self.start_game
         )
 
+        self.command_publisher = self.create_publisher(
+            AutonomousCommand,
+            '/autonomous_command',
+            10
+        )
+
+        self.ready_publisher = self.create_publisher(
+            Bool,
+            '/game/ready_for_input',
+            10
+        )
+
         self.get_logger().info('Game manager ready. Call /game/start.')
 
     def start_game(self, request, response):
@@ -76,6 +90,27 @@ class GameManagerNode(Node):
 
         self.get_logger().info(
             f'Round {len(self.sequence)} - sequence: {self.sequence}'
+        )
+        self.begin_playback()
+
+    def begin_playback(self):
+        self.waiting_for_input = False #CHANGE
+        self.playing_sequence = True
+        self.playback_index = 0
+        self.ready_publisher.publish(Bool(data=False))
+
+        # Publish Moves in Car command
+        self.publish_next_move()
+
+    def publish_next_move(self):
+        move = self.sequence[self.playback_index]
+        command = AutonomousCommand()
+        #command.start = True
+        command.move = int(move)
+        self.command_publisher.publish(command)
+        self.playback_index += 1
+        self.get_logger().info(
+            f'Playing move {self.playback_index}/{len(self.sequence)}: {move}'
         )
 
     def verify_player_sequence(self, message):
