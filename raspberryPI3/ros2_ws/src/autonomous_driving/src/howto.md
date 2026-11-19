@@ -6,7 +6,7 @@ colcon build --packages-up-to <your_package_name>
 source install/setup.bash
 
 
-J'arrive pas avec geivar.launch.py... Faut demander à Raph
+J'arrive pas avec geicar.launch.py... Faut demander à Raph
 ros2 run can can_rx_node
 ros2 run can can_tx_node
 ros2 run obstacle_stop obstacle_stop_node

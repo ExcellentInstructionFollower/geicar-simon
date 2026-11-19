@@ -62,6 +62,12 @@ class GameManagerNode(Node):
             10
         )
 
+        self.command_subscriber = self.create_subscription(
+            AutonomousCommand,
+            '/autonomous_command',
+            10
+        )
+
         self.ready_publisher = self.create_publisher(
             Bool,
             '/game/ready_for_input',
@@ -141,37 +147,44 @@ class GameManagerNode(Node):
 
         self.add_move()  # only after right answer.
 
+    # publish towards Screen node if step was correctly done or not
 
     def publish_step_correctness(self, correct):
 
-        # publish towards Screen node if step was correctly done or not
+        
 
         pass
 
+    # the callback function for Game launch subscription, store in game_active
     
     def check_start(self, message):
 
-        # the callback function for Game launch subscription, store in game_active
+        
 
         pass
 
+    # should be call when game launch topic sent from Movement detect Node is set to true
 
     def run_game(self):
 
-        # should be call when game launch topic sent from Movement detect Node is set to true
+        
 
         pass
     
 
+    # publish on the movement_to_perform topic the move to perform, would be received by Auto and Screen Node
+
     def publish_move_to_perform(self, move):
 
-        # publish on the movemebt_to_perform topic the move to perform, would be received by Auto and Screen Node
+        
 
         pass
 
+    # callback that store in Node attribute the AI detected movement and, later, in another function, compare to expected movement.
+
     def get_performed_move(self, message):
 
-        # callback that store in Node attribute the AI detected movement and, later, in another function, compare to expected movement.
+        
 
         pass
     
