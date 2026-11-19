@@ -31,7 +31,9 @@ class GameManagerNode(Node):
         super().__init__('game_manager_node')
 
         self.sequence = []
-        self.game_active = False
+        self.game_running = False
+        self.expected_step
+        self.
 
         # Publish current sequence: [1], [1, 4], [1, 4, 2], ...
         self.sequence_publisher = self.create_publisher(
@@ -78,7 +80,7 @@ class GameManagerNode(Node):
 
     def start_game(self, request, response):
         self.sequence = []
-        self.game_active = True
+        self.game_running = True
         self.add_move()  # First round generate one move
 
         response.success = True
@@ -152,10 +154,10 @@ class GameManagerNode(Node):
     def publish_step_correctness(self, correct):
 
         
-
         pass
 
-    # the callback function for Game launch subscription, store in game_active
+    # the callback function for Game launch subscription, store in game_active, communicate with AI node
+    # create self.start : bool
     
     def check_start(self, message):
 
@@ -163,28 +165,52 @@ class GameManagerNode(Node):
 
         pass
 
+
+    # callback that store in Node attribute the AI detected movement and, later, in another function, compare to expected movement.
+    # create self.ai_move_detected : direction
+
+    def get_performed_move(self, message):        
+
+        pass
+
     # should be call when game launch topic sent from Movement detect Node is set to true
+    # generate the sequence to perform
+    # send one by one to autonomous node and screen node
+    # wait for acknowledgment
+    # once all the step is performed by the car and displayed by the screen, publishes the detected movement from AI
+    # compare expected step with detected one and publish one the screen whether the player has correctly performed the step or not
+    # reapeat all of the above until the last sequence is done 
 
     def run_game(self):
-
-        
 
         pass
     
 
     # publish on the movement_to_perform topic the move to perform, would be received by Auto and Screen Node
+    # move : move to publish
 
     def publish_move_to_perform(self, move):
 
-        
 
         pass
 
-    # callback that store in Node attribute the AI detected movement and, later, in another function, compare to expected movement.
+    # return a new step to append in self.sequence
 
-    def get_performed_move(self, message):
+    def get_step(self):
 
-        
+        pass
+
+    # generate the whole step sequence, call several time get_step fct
+    # n : number of step in the sequence
+
+    def generate_sequence(self, n):
+
+        pass
+
+    # called when autonomous node sent his acknowledgement, then check if move_done is true 
+
+
+    def check_car_mouvement_performed(self, message):
 
         pass
     
