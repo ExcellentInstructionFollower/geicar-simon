@@ -13,7 +13,6 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(interfaces REQUIRED)
-find_package(yaml-cpp REQUIRED)
 
 include_directories(include)
 
@@ -25,9 +24,6 @@ ament_target_dependencies(autonomous_driving_node
   std_msgs
 )
 
-target_link_libraries(autonomous_driving_node
-  yaml-cpp
-)
 
 install(TARGETS
   autonomous_driving_node

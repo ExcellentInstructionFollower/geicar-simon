@@ -142,6 +142,41 @@ class GameManagerNode(Node):
         self.add_move()  # only after right answer.
 
 
+    def publish_step_correctness(self, correct):
+
+        # publish towards Screen node if step was correctly done or not
+
+        pass
+
+    
+    def check_start(self, message):
+
+        # the callback function for Game launch subscription, store in game_active
+
+        pass
+
+
+    def run_game(self):
+
+        # should be call when game launch topic sent from Movement detect Node is set to true
+
+        pass
+    
+
+    def publish_move_to_perform(self, move):
+
+        # publish on the movemebt_to_perform topic the move to perform, would be received by Auto and Screen Node
+
+        pass
+
+    def get_performed_move(self, message):
+
+        # callback that store in Node attribute the AI detected movement and, later, in another function, compare to expected movement.
+
+        pass
+    
+
+
 def main(args=None):
     rclpy.init(args=args)
     node = GameManagerNode()
