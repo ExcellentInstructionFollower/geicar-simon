@@ -13,7 +13,7 @@ terminal 1:
   ros2 run usb_cam usb_cam_node_exe --ros-args -p video_device:=/dev/video0 -p image_width:=320 -p image_height:=240 -p framerate:=10.0 -p pixel_format:=yuyv
 
 
-terminal 2: Web Server pour transmission video
+terminal 2: Web Server pour transmission video (optionnel)
 serveur vidéo (autre terminal) :
   ssh -J pi@10.105.1.168 jetson@192.168.1.10
   sudo docker exec -it ros-humble bash
@@ -21,11 +21,15 @@ serveur vidéo (autre terminal) :
   ros2 run web_video_server web_video_server
 
 sur la jetson : 
-python3 /home/jetson/camera_dev/trt_pose_server.py --weights /home/jetson/camera_dev/yolov8n-pose_320.engine
+python3 /home/jetson/camera_dev/trt_pose_server_V2.py --weights /home/jetson/camera_dev/yolov8n-pose_320.engine
 
 terminal 4 (docker):
 source /opt/ros/humble/setup.bash
 python3 /root/camera_dev/ros2_pose_bridge.py
+
+terminal 5 (docker):
+source /opt/ros/humble/setup.bash
+python3 /root/camera_dev/motion_detector_v2.py
  
 Usage (avec tracking) :
   python3 camera_viewer.py --pi 10.105.1.168 --weights weights.pt
