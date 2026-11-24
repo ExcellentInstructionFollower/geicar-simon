@@ -3,15 +3,24 @@
 Affiche le flux caméra de la Jetson (via web_video_server) sur le PC.
 Intègre le Tracking de Pose en temps réel via YOLO (Ultralytics).
 
+# Génère une clé si tu n'en as pas déjà une (appuie sur Entrée à toutes les questions)
+ssh-keygen -t ed25519
+
+# Copie la clé sur la Pi (mot de passe de la Pi demandé une dernière fois)
+ssh-copy-id pi@10.105.1.168
+
+# Copie la clé sur la Jetson via le rebond Pi (mot de passe Jetson 'geicar' demandé une dernière fois)
+ssh-copy-id -o ProxyJump=pi@10.105.1.168 jetson@192.168.1.10
+
 Prérequis côté voiture (dans le conteneur ros-humble de la Jetson) :
 activation caméra :
 terminal 1: 
   ssh -J pi@10.105.1.168 jetson@192.168.1.10
   sudo docker start -ai ros-humble (à faire une seule fois pour la voiture)
-  ros2 launch geicar_start_jetson geicar.jetson.launch.py
-   ou
+  
   ros2 run usb_cam usb_cam_node_exe --ros-args -p video_device:=/dev/video0 -p image_width:=320 -p image_height:=240 -p framerate:=10.0 -p pixel_format:=yuyv
-
+    (ou
+    ros2 launch geicar_start_jetson geicar.jetson.launch.py)
 
 terminal 2: Web Server pour transmission video (optionnel)
 serveur vidéo (autre terminal) :
@@ -20,7 +29,7 @@ serveur vidéo (autre terminal) :
   source /opt/ros/humble/setup.bash
   ros2 run web_video_server web_video_server
 
-sur la jetson : 
+sur la jetson (non docker): 
 python3 /home/jetson/camera_dev/trt_pose_server_V2.py --weights /home/jetson/camera_dev/yolov8n-pose_320.engine
 
 terminal 4 (docker):

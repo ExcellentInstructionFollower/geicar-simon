@@ -36,11 +36,11 @@ sleep 3
 
 # 5. Fenêtre 4 (Docker) : Bridge ROS 2 Pose
 tmux new-window -t $SESSION -n 'pose_bridge'
-tmux send-keys -t $SESSION:pose_bridge 'sudo docker exec -it ros-humble bash -c \"source /opt/ros/humble/setup.bash && python3 /root/camera_dev/ros2_pose_bridge.py\"' C-m
+tmux send-keys -t $SESSION:pose_bridge 'sudo docker exec -it ros-humble bash -c \"source /opt/ros/humble/setup.bash && python3 /root/ros2_pose_bridge_v2.py\"' C-m
 
 # 6. Fenêtre 5 (Docker) : Détecteur de mouvements
 tmux new-window -t $SESSION -n 'motion_det'
-tmux send-keys -t $SESSION:motion_det 'sudo docker exec -it ros-humble bash -c \"source /opt/ros/humble/setup.bash && python3 /root/camera_dev/motion_detector_v2.py\"' C-m
+tmux send-keys -t $SESSION:motion_det 'sudo docker exec -it ros-humble bash -c \"source /opt/ros/humble/setup.bash && python3 /root/motion_detector_v2.py\"' C-m
 
 # Attacher le terminal sur la fenêtre du détecteur de mouvement
 tmux select-window -t $SESSION:motion_det
