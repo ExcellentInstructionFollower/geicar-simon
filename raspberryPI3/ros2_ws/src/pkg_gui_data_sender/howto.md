@@ -1,0 +1,1 @@
+Important : in main raspberry pi, do sudo ufw allow 5555/tcp

@@ -40,7 +40,6 @@ class ZmqSenderNode(Node):
         # 3. ROS 2 Subscriptions
         self.create_subscription(State, '/state', self.state_callback, 10)
         self.create_subscription(ArduinoData, '/arduino_data', self.arduino_callback, 10)
-        self.create_subscription(AI, '/ai_perception_data', self.gesture_callback, 10)
         self.create_subscription(FollowingStateEvent, '/following_state_event', self.following_state_callback, 10)
 
         # 4. Transmission Timer
