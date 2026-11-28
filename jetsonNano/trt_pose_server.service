@@ -1,0 +1,14 @@
+[Unit]
+Description=TensorRT YOLO-Pose Inference Server (Jetson Host)
+After=network.target
+
+[Service]
+Type=simple
+User=jetson
+WorkingDirectory=/home/jetson/camera_dev
+ExecStart=/usr/bin/python3 /home/jetson/camera_dev/trt_pose_server_V2.py --weights /home/jetson/camera_dev/yolov8n-pose_320.engine --port 5555
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

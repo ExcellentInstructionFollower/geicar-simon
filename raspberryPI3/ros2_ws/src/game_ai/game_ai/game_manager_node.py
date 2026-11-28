@@ -33,7 +33,7 @@ class GameManagerNode(Node):
         self.sequence = []
         self.game_running = False
         self.expected_step
-        self.autonomous_ack  = False
+        self.
 
         # Publish current sequence: [1], [1, 4], [1, 4, 2], ...
         self.sequence_publisher = self.create_publisher(
@@ -64,7 +64,7 @@ class GameManagerNode(Node):
             10
         )
 
-        self.ack_autonomous = self.create_subscription(
+        self.command_subscriber = self.create_subscription(
             AutonomousCommand,
             '/autonomous_command',
             10
@@ -113,20 +113,15 @@ class GameManagerNode(Node):
     def publish_next_move(self):
         ## Sending the initial sequence is working, 
         ## it does not advance to next movement, due to not yet implemented feedback logic in 
-        if self.autonomous_ack :
-            move = self.sequence[self.playback_index]
-            command = AutonomousCommand()
-            #command.start = True
-            command.move = int(move)
-            self.command_publisher.publish(command)
-            self.playback_index += 1
-            self.get_logger().info(
-                f'Playing move {self.playback_index}/{len(self.sequence)}: {move}'
-            )
-
-    def recv_ack(self, message):
-        self.ack = message.movement_done
-
+        move = self.sequence[self.playback_index]
+        command = AutonomousCommand()
+        #command.start = True
+        command.move = int(move)
+        self.command_publisher.publish(command)
+        self.playback_index += 1
+        self.get_logger().info(
+            f'Playing move {self.playback_index}/{len(self.sequence)}: {move}'
+        )
 
     def verify_player_sequence(self, message):
         """Generate next movement after review"""

@@ -15,6 +15,8 @@
     
   <exec_depend>rplidar_ros</exec_depend>
   <exec_depend>usb_cam</exec_depend>
+  <exec_depend>system_check_ack</exec_depend>
+  <exec_depend>pose_vision</exec_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
