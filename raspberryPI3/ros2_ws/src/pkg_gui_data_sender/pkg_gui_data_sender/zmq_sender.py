@@ -14,7 +14,7 @@ UPDATES_PER_SECOND = 2.0
 RAISE_LEFT_ARM = 5
 RAISE_RIGHT_ARM = 6
 RAISE_BOTH_ARMS = 7
-MOVE_TIME_NS = 3e9
+MOVE_TIME_NS = 25e8
 
 
 class ZmqSenderNode(Node):
@@ -43,11 +43,11 @@ class ZmqSenderNode(Node):
         }
 
         # 3. ROS 2 Subscriptions and Publishers
-        self.create_subscription(Bool, '/stop_topic', self.stop_callback, 10)
+        self.create_subscription(Bool, '/obstacle_stop', self.stop_callback, 10)
         self.create_subscription(AutonomousCommand, '/autonomous_command', self.command_callback, 10)
         self.create_subscription(Int32, '/game/state', self.game_callback, 10)
 
-        self.ack_publisher = self.create_publisher(AutonomousCommand, "/autonomous_ack", 10)
+        self.ack_publisher = self.create_publisher(AutonomousCommand, "/movement_ack", 10)
 
         # 4. Transmission Timer
         self.timer = self.create_timer(1.0/UPDATES_PER_SECOND, self.publish_to_gui)
@@ -103,6 +103,8 @@ class ZmqSenderNode(Node):
                     self.move_in_play = False
                     must_send_ack = True
                     movetype_performed = self.move_type
+                    self.latest_data['left_arm_state'] = 0
+                    self.latest_data['right_arm_state'] = 0
                     
                 data_to_send = self.latest_data.copy()
 

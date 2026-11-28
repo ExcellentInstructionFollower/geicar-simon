@@ -231,7 +231,7 @@ class GameManagerNode(Node):
 
     def get_step(self):
 
-        return random.randint(1, 4)
+        return random.randint(1, 7)
     
 
 

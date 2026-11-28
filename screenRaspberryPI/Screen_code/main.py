@@ -135,7 +135,7 @@ class DashboardBackend(QObject):
         self._right_arm = data.get("right_arm_state", 0)
 
         # --- FOLLOWING_STATE ---
-        self.update_follow(data.get("following_state",-1))
+        self.update_follow(data.get("game_state",-1))
         
         # Emission des autres signaux
         self.stateChanged.emit()

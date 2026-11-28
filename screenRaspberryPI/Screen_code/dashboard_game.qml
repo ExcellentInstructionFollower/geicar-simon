@@ -50,6 +50,7 @@ ApplicationWindow {
 
         // --- INSTRUCTIONS ---
         ColumnLayout {
+            id: instruction_column
             Layout.preferredWidth: parent.width * 0.4
             Layout.fillHeight: true
             spacing: 0
@@ -74,18 +75,25 @@ ApplicationWindow {
                 }
                 border.color: "#2c3e50"
 
-                ColumnLayout {
-                    anchors.centerIn: parent
-
-                    Text {
-                        text: backend.gameState
-                        color: "white"
-                        font.pixelSize: 60
-                        Layout.alignment: Qt.AlignHCenter
-                        wrapMode: Text.WordWrap
-                        // Layout.topMargin: 60
-                    }
+                Text {
+                    id: text_field
+                    text: backend.gameState
+                    color: "white"
+                    font.pixelSize: 60
+                    Layout.alignment: Qt.AlignHCenter
+                    wrapMode: Text.WordWrap
+                    width: parent.width
+                    height: parent.height
+                    // Layout.topMargin: 60
                 }
+
+                Component.onCompleted: {
+                    if (text_field.paintedWidth > instruction_column.width) {
+                        width = instruction_column.width
+                    } else {
+                        width = text_field.paintedWidth
+                    }
+                }     
             }
         }
 

@@ -256,7 +256,9 @@ private:
 	  sequenceFinished = true;
 	  ack_msg.movetype = moveType;
 	  ack_msg.movement_done = true;
-	  publisher_ack_->publish(ack_msg); //On publish l'acknowledgement au CAN, qui dit au generateur du jeu de basculer au prochain mouvement
+    if (moveType < 5 || moveType > 7) {
+	    publisher_ack_->publish(ack_msg); //On publish l'acknowledgement au CAN, qui dit au generateur du jeu de basculer au prochain mouvement
+    }
 	  RCLCPP_INFO(this->get_logger(),"Sequence FINISHED");
 	}
       }
