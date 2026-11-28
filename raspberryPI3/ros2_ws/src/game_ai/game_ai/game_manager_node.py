@@ -14,6 +14,8 @@
 """"ros2 topic pub --once /game/player_input std_msgs/msg/Int32MultiArray "{data: [2]}" """
 """"ros2 topic pub --once /game/player_input std_msgs/msg/Int32MultiArray "{data: [2, 4]}" """
 """" ... """
+#Send move to perform to autonomous node
+""""ros2 topic pub --once /autonomous_command  interfaces/msg/AutonomousCommand "{movetype: 1, movement_done: false}" """
 import random
 
 import rclpy
@@ -25,15 +27,18 @@ from interfaces.msg import AutonomousCommand
 
 
 class GameManagerNode(Node):
-    MAX_STEPS = 20
+    MAX_STEPS = 4
 
     def __init__(self):
         super().__init__('game_manager_node')
 
         self.sequence = []
         self.game_running = False
-        self.expected_step
-        self.
+        self.autonomous_ack = False
+        self.waiting_for_input = False
+        self.playing_sequence = False
+        self.playback_index = 0
+        self._playback_timer = None
 
         # Publish current sequence: [1], [1, 4], [1, 4, 2], ...
         self.sequence_publisher = self.create_publisher(
@@ -64,9 +69,10 @@ class GameManagerNode(Node):
             10
         )
 
-        self.command_subscriber = self.create_subscription(
+        self.ack_autonomous = self.create_subscription(
             AutonomousCommand,
-            '/autonomous_command',
+            '/movement_ack',
+            self.recv_autonomous_ack,
             10
         )
 
@@ -81,16 +87,15 @@ class GameManagerNode(Node):
     def start_game(self, request, response):
         self.sequence = []
         self.game_running = True
-        self.add_move()  # First round generate one move
-
+        self.waiting_for_input = False
+        self.run_game()
         response.success = True
         response.message = 'Game started. First sequence published.'
         return response
 
     def add_move(self):
-        """Add one movement to the list."""
-        move = random.randint(1, 4)
-        self.sequence.append(move)
+        """Append a random movement and play the complete sequence."""
+        self.sequence.append(self.get_step())
 
         message = Int32MultiArray()
         message.data = self.sequence.copy()
@@ -111,40 +116,53 @@ class GameManagerNode(Node):
         self.publish_next_move()
 
     def publish_next_move(self):
-        ## Sending the initial sequence is working, 
-        ## it does not advance to next movement, due to not yet implemented feedback logic in 
+        if self.playback_index >= len(self.sequence):
+            return
+
         move = self.sequence[self.playback_index]
-        command = AutonomousCommand()
-        #command.start = True
-        command.move = int(move)
-        self.command_publisher.publish(command)
+        self.publish_move_to_perform(move)
+        self.autonomous_ack = False
         self.playback_index += 1
         self.get_logger().info(
             f'Playing move {self.playback_index}/{len(self.sequence)}: {move}'
         )
 
+    # recv acknowledgement from autonomous node
+
+    def recv_autonomous_ack(self, message):
+        if self.playing_sequence and message.movement_done:
+            self.autonomous_ack = True
+            self.get_logger().info('Ack received from autonomous')
+
+
+
     def verify_player_sequence(self, message):
-        """Generate next movement after review"""
-        if not self.game_active:
+        """Check the player's answer after the full sequence was played."""
+        if not self.game_running:
             self.get_logger().warn('No active game. Call /game/start first.')
             return
+        if not self.waiting_for_input:
+            self.get_logger().warn('Sequence is not ready for player input yet.')
+            return
 
+        self.waiting_for_input = False
         player_input = list(message.data)
         correct = player_input == self.sequence
-        self.result_publisher.publish(Bool(data=correct))
+        self.publish_step_correctness(correct)
 
         if not correct:
             self.get_logger().warn(
                 f'Incorrect sequence: {player_input}. '
-                f'Expected {len(self.sequence)} moves. Try again.'
+                f'Expected {len(self.sequence)} moves. Replaying the sequence.'
             )
-            return  # For now - after will restart the game.
+            self.begin_playback()
+            return
 
         self.get_logger().info('Correct sequence!')
 
         if len(self.sequence) >= self.MAX_STEPS:
-            self.game_active = False
-            self.get_logger().info('Game finished: 20 rounds completed!')
+            self.game_running = False
+            self.get_logger().info('Game finished: 3 rounds completed!')
             return
 
         self.add_move()  # only after right answer.
@@ -153,25 +171,7 @@ class GameManagerNode(Node):
 
     def publish_step_correctness(self, correct):
 
-        
-        pass
-
-    # the callback function for Game launch subscription, store in game_active, communicate with AI node
-    # create self.start : bool
-    
-    def check_start(self, message):
-
-        
-
-        pass
-
-
-    # callback that store in Node attribute the AI detected movement and, later, in another function, compare to expected movement.
-    # create self.ai_move_detected : direction
-
-    def get_performed_move(self, message):        
-
-        pass
+        self.result_publisher.publish(Bool(data=correct))
 
     # should be call when game launch topic sent from Movement detect Node is set to true
     # generate the sequence to perform
@@ -182,8 +182,28 @@ class GameManagerNode(Node):
     # reapeat all of the above until the last sequence is done 
 
     def run_game(self):
+        """Start the first round and service acknowledgements asynchronously."""
+        self.add_move()
+        if hasattr(self, '_playback_timer') and self._playback_timer is not None:
+            self._playback_timer.cancel()
+        self._playback_timer = self.create_timer(0.05, self.advance_playback)
 
-        pass
+    def advance_playback(self):
+        # Advance to the next move when the autonomous node acknowledges one.
+        if not self.playing_sequence or not self.autonomous_ack:
+            return
+
+        if self.playback_index < len(self.sequence):
+            # publish_next_move consumes the ack and increments playback_index.
+            self.publish_next_move()
+            return
+
+        # The last published move has now been acknowledged.
+        self.autonomous_ack = False
+        self.playing_sequence = False
+        self.waiting_for_input = True
+        self.ready_publisher.publish(Bool(data=True))
+        self.get_logger().info('Sequence playback complete. Ready for player input.')
     
 
     # publish on the movement_to_perform topic the move to perform, would be received by Auto and Screen Node
@@ -191,28 +211,16 @@ class GameManagerNode(Node):
 
     def publish_move_to_perform(self, move):
 
-
-        pass
+        command = AutonomousCommand()
+        command.movetype = move
+        command.movement_done = False
+        self.command_publisher.publish(command)
 
     # return a new step to append in self.sequence
 
     def get_step(self):
 
-        pass
-
-    # generate the whole step sequence, call several time get_step fct
-    # n : number of step in the sequence
-
-    def generate_sequence(self, n):
-
-        pass
-
-    # called when autonomous node sent his acknowledgement, then check if move_done is true 
-
-
-    def check_car_mouvement_performed(self, message):
-
-        pass
+        return random.randint(1, 4)
     
 
 
