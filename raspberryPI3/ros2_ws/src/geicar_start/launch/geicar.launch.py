@@ -67,9 +67,9 @@ def generate_launch_description():
         emulate_tty=True
     )
 
-    sequence_maker_node = Node(
+    game_manager_node = Node(
         package="game_ai",
-        executable="sequence_maker_node",
+        executable="game_manager_node",
         emulate_tty=True
     )
 
@@ -82,7 +82,7 @@ def generate_launch_description():
     ld.add_action(obstacle_stop_node)
     ld.add_action(imu_filter_madgwick_node)
     ld.add_action(autonomous_driving_node)
-    ld.add_action(sequence_maker_node)
+    ld.add_action(game_manager_node)
     ld.add_action(system_check_node)
 
     return ld
