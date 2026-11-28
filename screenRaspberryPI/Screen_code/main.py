@@ -61,7 +61,6 @@ class DashboardBackend(QObject):
         self._left_arm = 0
         self._right_arm = 0
         self._gameState = "Deactivated"
-        self._motd = ""
 
         self.buffered_game_state = 0
 
@@ -76,7 +75,6 @@ class DashboardBackend(QObject):
     leftArmChanged = pyqtSignal()
     rightArmChanged = pyqtSignal()
     gameStateChanged = pyqtSignal()
-    motdChanged = pyqtSignal()
 
     @pyqtProperty(int, notify=stateChanged)
     def state(self):
@@ -93,10 +91,6 @@ class DashboardBackend(QObject):
     @pyqtProperty(str, notify=gameStateChanged)
     def gameState(self):
         return self._gameState
-    
-    @pyqtProperty(str, notify=motdChanged)
-    def motd(self):
-        return self._motd
 
     def follow_timeout(self):
         print("And of follow timer, using buffered state")
@@ -145,8 +139,8 @@ class DashboardBackend(QObject):
         
         # Emission des autres signaux
         self.stateChanged.emit()
-        self.tempChanged.emit()
-        self.humidChanged.emit()
+        self.leftArmChanged.emit()
+        self.rightArmChanged.emit()
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Should allow closing with ctrl+c

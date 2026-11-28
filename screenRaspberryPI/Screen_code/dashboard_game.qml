@@ -25,9 +25,9 @@ ApplicationWindow {
                 Layout.fillHeight: true
                 color: {
                     if (backend.left_arm === 1) {
-                        return "#892651" ;
-                    } else {
                         return "#72ed1a" ;
+                    } else {
+                        return "#892651" ;
                     }
                 }
                 border.color: "#2c3e50"
@@ -99,9 +99,9 @@ ApplicationWindow {
                 Layout.fillHeight: true
                 color: {
                     if (backend.right_arm === 1) {
-                        return "#892651" ;
-                    } else {
                         return "#72ed1a" ;
+                    } else {
+                        return "#892651" ;
                     }
                 }
                 border.color: "#2c3e50"
