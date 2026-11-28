@@ -74,6 +74,12 @@ def generate_launch_description():
         output="screen",
         emulate_tty=True
     )
+    
+    game_manager_node = Node(
+        package="game_ai",
+        executable="game_manager_node",
+        emulate_tty=True
+    )
 
 
     ld.add_action(joystick_node)
@@ -85,6 +91,7 @@ def generate_launch_description():
     ld.add_action(imu_filter_madgwick_node)
     ld.add_action(autonomous_driving_node)
     ld.add_action(gui_data_sender_node)
+    ld.add_action(game_manager_node)
     ld.add_action(system_check_node)
 
     return ld
