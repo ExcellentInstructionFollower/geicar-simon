@@ -21,6 +21,7 @@
   <exec_depend>imu_filter_madgwick</exec_depend>
   <exec_depend>car_control</exec_depend>
   <exec_depend>system_check</exec_depend>
+  <exec_depend>game_ai</exec_depend>
   <exec_depend>ros2launch</exec_depend>
   <exec_depend>pkg_gui_data_sender</exec_depend>
 

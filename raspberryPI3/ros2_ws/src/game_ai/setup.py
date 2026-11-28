@@ -19,6 +19,7 @@ setup(
     entry_points={
         'console_scripts': [
             'sequence_maker_node = game_ai.sequence_maker_node:main',
+            'game_manager_node = game_ai.game_manager_node:main',
         ],
     },
 )
