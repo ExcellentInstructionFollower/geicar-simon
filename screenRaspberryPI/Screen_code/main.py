@@ -72,20 +72,12 @@ class DashboardBackend(QObject):
     def __init__(self):
         super().__init__()
         self._state = 0
-        self._temp = 0
-        self._humid = 0
-        self._gesture = "none"
-        self._followingState = "Deactivated"
+        self._left_arm = 0
+        self._right_arm = 0
+        self._gameState = "Deactivated"
         self._motd = ""
 
-        self.buffered_following_state = 0
-
-        # --- AJOUT LOGIQUE TIMER ---
-        # self.gesture_timer = QTimer()
-        # self.gesture_timer.setInterval(300)  # 5000 ms = 5 secondes
-        # self.gesture_timer.setSingleShot(True) # Le timer ne s'exécute qu'une fois
-        # self.gest
-        # ure_timer.timeout.connect(self.reset_gesture) # Quand le temps est écoulé, on appelle cette fonction
+        self.buffered_game_state = 0
 
         self.follow_timer = QTimer()
         self.follow_timer.setInterval(3000)
@@ -98,49 +90,37 @@ class DashboardBackend(QObject):
         self.socket_thread.start()
 
     stateChanged = pyqtSignal()
-    tempChanged = pyqtSignal()
-    humidChanged = pyqtSignal()
-    gestureChanged = pyqtSignal()
-    followinStateChanged = pyqtSignal()
+    leftArmChanged = pyqtSignal()
+    rightArmChanged = pyqtSignal()
+    gameStateChanged = pyqtSignal()
     motdChanged = pyqtSignal()
 
     @pyqtProperty(int, notify=stateChanged)
     def state(self):
         return self._state
 
-    @pyqtProperty(int, notify=tempChanged)
-    def temperature(self):
-        return self._temp
+    @pyqtProperty(int, notify=leftArmChanged)
+    def left_arm(self):
+        return self._left_arm
 
-    @pyqtProperty(int, notify=humidChanged)
-    def humidity(self):
-        return self._humid
-
-    @pyqtProperty(str, notify=gestureChanged)
-    def gesture(self):
-        return self._gesture
-    
-    @pyqtProperty(str, notify=followinStateChanged)
-    def followingState(self):
-        return self._followingState
+    @pyqtProperty(int, notify=rightArmChanged)
+    def right_arm(self):
+        return self._right_arm
+   
+    @pyqtProperty(str, notify=gameStateChanged)
+    def gameState(self):
+        return self._gameState
     
     @pyqtProperty(str, notify=motdChanged)
     def motd(self):
         return self._motd
 
-    # --- AJOUT : Fonction appelée quand le timer est fini ---
-    def reset_gesture(self):
-        print("Fin du délai : remise à zéro du geste.")
-        self._gesture = "none"
-        self.gestureChanged.emit()
-    # ------------------------------------------------------
-
     def follow_timeout(self):
         print("And of follow timer, using buffered state")
-        self._state = self.fstate_to_str(self.buffered_following_state)
+        self._state = self.gstate_to_str(self.buffered_game_state)
         self.followinStateChanged.emit()
 
-    def fstate_to_str(self,state):
+    def gstate_to_str(self,state):
         if state == 1:
             return "Follow the car's movement's !"
         elif state == 2:
@@ -158,51 +138,24 @@ class DashboardBackend(QObject):
         if fstate == -1:
             return # no new fstate
         else: # always buffer latest fstate
-            self.buffered_following_state = fstate
+            self.buffered_game_state = fstate
 
         if self._state == 0: # mode STOP:
-            self._followingState = "Deactivated"
+            self._gameState = "Deactivated"
         else:
             # if self.follow_timer.isActive():
             #     return # do not update while timer is running
             # if fstate == 1: # Master lost
             #     self.follow_timer.start()
-            self._followingState = self.fstate_to_str(fstate)
+            self._gameState = self.gstate_to_str(fstate)
         
-        self.followinStateChanged.emit()
+        self.gameStateChanged.emit()
 
     def update_data(self, data: dict):
         # Mise à jour des données standard
         self._state = data.get("state", 0)
-        self._temp = data.get("temperature", 0)
-        self._humid = data.get("humidity", 0)
-        
-        # --- LOGIQUE INTELLIGENTE GESTE ---
-        incoming_gesture: str = data.get("gesture", "none").replace('_',' ')
-        
-        self._gesture = incoming_gesture
-        self.gestureChanged.emit()
-        # if incoming_gesture != "none":
-        #     # Cas 1 : On reçoit un VRAI geste
-        #     # On met à jour immédiatement et on (re)lance le timer
-        #     if self._gesture != incoming_gesture:
-        #         self._gesture = incoming_gesture
-        #         self.gestureChanged.emit()
-        #     
-        #     # On redémarre le timer (ça remet le compteur à 5s même s'il tournait déjà)
-        #     self.gesture_timer.start()
-
-        # else:
-        #     # Cas 2 : On reçoit "none"
-        #     # Si le timer tourne, on IGNORE ce "none" (on est en période de maintien)
-        #     if self.gesture_timer.isActive():
-        #         pass 
-        #     else:
-        #         # Si le timer ne tourne pas, on peut afficher "none"
-        #         if self._gesture != "none":
-        #             self._gesture = "none"
-        #             self.gestureChanged.emit()
-        # ----------------------------------
+        self._left_arm = data.get("left_arm_state", 0)
+        self._right_arm = data.get("right_arm_state", 0)
 
         # --- FOLLOWING_STATE ---
         self.update_follow(data.get("following_state",-1))
@@ -211,7 +164,6 @@ class DashboardBackend(QObject):
         self.stateChanged.emit()
         self.tempChanged.emit()
         self.humidChanged.emit()
-        # Note: gestureChanged est géré dans la logique ci-dessus pour éviter les clignotements
     
     def update_motd(self,_):
         rep = requests.get("https://micasend.magictintin.fr/msg?getmsg=json")

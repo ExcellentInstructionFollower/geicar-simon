@@ -23,9 +23,7 @@ set(msg_files
   "msg/SystemCheck.msg"
   "msg/LogEntry.msg"
   "msg/AutonomousCommand.msg"
-  "msg/State.msg"
   "msg/FollowingStateEvent.msg"
-  "msg/ArduinoData.msg"
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

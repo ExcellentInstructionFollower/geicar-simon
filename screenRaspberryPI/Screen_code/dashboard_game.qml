@@ -27,7 +27,7 @@ ApplicationWindow {
                 border.color: "#2c3e50"
                 Image{
                     source : {
-                        if (backend.temperature === 1) {
+                        if (backend.left_arm === 1) {
                             //arm by Jacqueline Fernandes from Noun Project (CC BY 3.0)
                             return "pics/arm_raised_left.png" ;
                         } else {
@@ -52,15 +52,15 @@ ApplicationWindow {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 color: {
-                    if (backend.followingState === "Deactivated") {
+                    if (backend.gameState === "Deactivated") {
                         return "#34495e";
-                    } else if (backend.followingState === "Oops, it looks like you didn't do the right moves... ") {
+                    } else if (backend.gameState === "Oops, it looks like you didn't do the right moves... ") {
                         return '#c02121';
-                    } else if (backend.followingState === "Follow the car's movement's !") {
+                    } else if (backend.gameState === "Follow the car's movement's !") {
                         return '#d66e28';
-                    } else if (backend.followingState === "Now do the same moves as the car") {
+                    } else if (backend.gameState === "Now do the same moves as the car") {
                         return '#5354c5';
-                    } else if (backend.followingState === "Good job ! Can you do it again with one more move ?") {
+                    } else if (backend.gameState === "Good job ! Can you do it again with one more move ?") {
                         return '#15bd31';
                     } else {
                         return '#9d2bc0'; // Error
@@ -72,7 +72,7 @@ ApplicationWindow {
                     anchors.centerIn: parent
 
                     Text {
-                        text: backend.followingState
+                        text: backend.gameState
                         color: "white"
                         font.pixelSize: 60
                         Layout.alignment: Qt.AlignHCenter
@@ -94,7 +94,7 @@ ApplicationWindow {
                 border.color: "#2c3e50"
                 Image{
                     source : {
-                        if (backend.humidity === 1) {
+                        if (backend.right_arm === 1) {
                             //arm by Jacqueline Fernandes from Noun Project (CC BY 3.0)
                             return "pics/arm_raised_right.png" ;
                         } else {
