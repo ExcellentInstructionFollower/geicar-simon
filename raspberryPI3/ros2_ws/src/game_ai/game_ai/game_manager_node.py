@@ -20,9 +20,15 @@ import random
 
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Bool, Int32MultiArray
+from std_msgs.msg import Bool, Int32MultiArray, Int32
 from std_srvs.srv import Trigger
 from interfaces.msg import AutonomousCommand
+
+STATE_GAME_OFF = 0
+STATE_SEQUENCE_PLAYING = 1
+STATE_INPUT_WAIT = 2
+STATE_GAME_SUCCESS = 3
+STATE_GAME_FAILURE = 4
 
 
 
@@ -46,8 +52,8 @@ class GameManagerNode(Node):
         )
 
         # Evaluate player answer.
-        self.result_publisher = self.create_publisher(
-            Bool, '/game/correct', 10
+        self.state_publisher = self.create_publisher(
+            Int32, '/game/state', 10
         )
 
         # Receive player list
@@ -112,6 +118,7 @@ class GameManagerNode(Node):
         self.playback_index = 0
         self.ready_publisher.publish(Bool(data=False))
 
+        self.publish_game_state(STATE_SEQUENCE_PLAYING)
         # Publish Moves in Car command
         self.publish_next_move()
 
@@ -148,7 +155,10 @@ class GameManagerNode(Node):
         self.waiting_for_input = False
         player_input = list(message.data)
         correct = player_input == self.sequence
-        self.publish_step_correctness(correct)
+        if correct:
+            self.publish_game_state(STATE_GAME_SUCCESS)
+        else:
+            self.publish_game_state(STATE_GAME_FAILURE)
 
         if not correct:
             self.get_logger().warn(
@@ -169,9 +179,9 @@ class GameManagerNode(Node):
 
     # publish towards Screen node if step was correctly done or not
 
-    def publish_step_correctness(self, correct):
+    def publish_game_state(self, state):
 
-        self.result_publisher.publish(Bool(data=correct))
+        self.state_publisher.publish(Int32(data=state))
 
     # should be call when game launch topic sent from Movement detect Node is set to true
     # generate the sequence to perform
@@ -203,6 +213,7 @@ class GameManagerNode(Node):
         self.playing_sequence = False
         self.waiting_for_input = True
         self.ready_publisher.publish(Bool(data=True))
+        self.publish_game_state(STATE_INPUT_WAIT)
         self.get_logger().info('Sequence playback complete. Ready for player input.')
     
 

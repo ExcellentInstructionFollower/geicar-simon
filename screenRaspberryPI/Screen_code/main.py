@@ -53,20 +53,6 @@ class NetworkWorker(QThread):
         except Exception as e:
             print(f"[ZMQ] Critical Initialization Error: {e}")
 
-async def websocket_loop(callback):
-    num_errors = 0
-    while num_errors<10:
-        try:
-            async with websockets.connect("wss://magictintin.fr/ws") as websocket:
-                # await websocket.send("luthen/main:ping")
-                await websocket.send("micasend:ping")
-                while True:
-                    response = await websocket.recv()
-                    # print(f"Response: {response}")
-                    callback(response)
-        except Exception as e:
-            num_errors += 1
-            print("Error:",e)
 
 class DashboardBackend(QObject):
     def __init__(self):
@@ -85,9 +71,6 @@ class DashboardBackend(QObject):
         self.follow_timer.timeout.connect(self.follow_timeout)
         # ---------------------------
 
-        self.socket_thread = Thread(target=lambda:asyncio.run(websocket_loop(self.update_motd)))
-        self.socket_thread.daemon = True
-        self.socket_thread.start()
 
     stateChanged = pyqtSignal()
     leftArmChanged = pyqtSignal()
@@ -164,15 +147,6 @@ class DashboardBackend(QObject):
         self.stateChanged.emit()
         self.tempChanged.emit()
         self.humidChanged.emit()
-    
-    def update_motd(self,_):
-        rep = requests.get("https://micasend.magictintin.fr/msg?getmsg=json")
-        js = json.loads(unescape(rep.text))[-1]
-        sender:str = js.get("sender","???")
-        msg:str = js.get("content","")
-        msg = msg.replace('§',' ') # because baptiste is an injenir
-        self._motd = f"{sender}: {msg}"
-        self.motdChanged.emit()
 
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Should allow closing with ctrl+c
