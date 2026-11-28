@@ -14,6 +14,7 @@ ssh-copy-id -o ProxyJump=pi@10.105.1.168 jetson@192.168.1.10
 
 Prérequis côté voiture (dans le conteneur ros-humble de la Jetson) :
 activation caméra :
+
 terminal 1: 
   ssh -J pi@10.105.1.168 jetson@192.168.1.10
   sudo docker start -ai ros-humble (à faire une seule fois pour la voiture)
@@ -23,7 +24,8 @@ terminal 1:
     ros2 launch geicar_start_jetson geicar.jetson.launch.py)
 
 terminal 2: Web Server pour transmission video (optionnel)
-serveur vidéo (autre terminal) :
+serveur vidéo (autre terminal) :sudo docker start -ai ros-humble
+
   ssh -J pi@10.105.1.168 jetson@192.168.1.10
   sudo docker exec -it ros-humble bash
   source /opt/ros/humble/setup.bash
@@ -34,7 +36,7 @@ python3 /home/jetson/camera_dev/trt_pose_server_V2.py --weights /home/jetson/cam
 
 terminal 4 (docker):
 source /opt/ros/humble/setup.bash
-python3 /root/camera_dev/ros2_pose_bridge.py
+python3 /root/camera_dev/ros2_pose_bridge_V2.py
 
 terminal 5 (docker):
 source /opt/ros/humble/setup.bash
