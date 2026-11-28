@@ -76,6 +76,7 @@ ApplicationWindow {
                         color: "white"
                         font.pixelSize: 60
                         Layout.alignment: Qt.AlignHCenter
+                        wrapMode: Text.WordWrap
                         // Layout.topMargin: 60
                     }
                 }

@@ -6,7 +6,7 @@ import threading
 import time
 import zmq
 
-from interfaces.msg import AutonomousCommand, FollowingStateEvent
+from interfaces.msg import AutonomousCommand
 
 
 ZMQ_PORT = 5555
@@ -45,7 +45,7 @@ class ZmqSenderNode(Node):
         # 3. ROS 2 Subscriptions and Publishers
         self.create_subscription(Bool, '/stop_topic', self.stop_callback, 10)
         self.create_subscription(AutonomousCommand, '/autonomous_command', self.command_callback, 10)
-        self.create_subscription(FollowingStateEvent, '/following_state_event', self.game_callback, 10)
+        self.create_subscription(Bool, '/game/correct', self.game_callback, 10)
 
         self.ack_publisher = self.create_publisher(AutonomousCommand, "/autonomous_ack", 10)
 
@@ -88,7 +88,10 @@ class ZmqSenderNode(Node):
 
     def game_callback(self, data):
         with self.lock:
-            self.latest_data['game_state'] = data.state
+            if data.data:
+                self.latest_data['game_state'] = 3
+            else:
+                self.latest_data['game_state'] = 4
 
     # --- Sender Loop ---
     def publish_to_gui(self):
