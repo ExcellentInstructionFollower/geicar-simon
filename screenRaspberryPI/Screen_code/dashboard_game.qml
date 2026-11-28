@@ -23,7 +23,13 @@ ApplicationWindow {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                color: "#ee22cc"
+                color: {
+                    if (backend.left_arm === 1) {
+                        return "#892651" ;
+                    } else {
+                        return "#72ed1a" ;
+                    }
+                }
                 border.color: "#2c3e50"
                 Image{
                     source : {
@@ -91,7 +97,13 @@ ApplicationWindow {
             Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                color: "#ee22cc"
+                color: {
+                    if (backend.right_arm === 1) {
+                        return "#892651" ;
+                    } else {
+                        return "#72ed1a" ;
+                    }
+                }
                 border.color: "#2c3e50"
                 Image{
                     source : {
